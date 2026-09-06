@@ -1334,4 +1334,9 @@ declare module 'obsidian' {
     interface KeymapEventHandler {
         func: KeymapEventListener;
     }
+
+    interface Modal {
+        /* Introduced in Obsidian 1.13 most likely */
+        readonly doc: Document;
+    }
 }
