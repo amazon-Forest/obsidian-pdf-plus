@@ -98,7 +98,10 @@ export class copyLinkLib extends PDFPlusLibSubmodule {
 
     getLinkTemplateVariables(child: PDFViewerChild, displayTextFormat: string | undefined, file: TFile, subpath: string, page: number, text: string, comment: string, sourcePath?: string) {
         sourcePath = sourcePath ?? '';
-        const link = this.app.fileManager.generateMarkdownLink(file, sourcePath, subpath).slice(1);
+        // Do not use `app.fileManager.generateMarkdownLink(...).slice(1)` here: since Obsidian 1.10.3, it no longer
+        // prepends "!" to links to attachments, so `.slice(1)` would remove the first "[" instead.
+        // `lib.generateMarkdownLink` always returns an embed link for PDF files regardless of the Obsidian version.
+        const link = this.lib.generateMarkdownLink(file, sourcePath, subpath).slice(1);
         let linktext = this.app.metadataCache.fileToLinktext(file, sourcePath) + subpath;
         if (this.app.vault.getConfig('useMarkdownLinks')) {
             linktext = encodeLinktext(linktext);
@@ -108,7 +111,7 @@ export class copyLinkLib extends PDFPlusLibSubmodule {
         // const linkWithDisplay = app.fileManager.generateMarkdownLink(file, sourcePath, subpath, display).slice(1);
         const linkWithDisplay = this.lib.generateMarkdownLink(file, sourcePath, subpath, display || undefined).slice(1);
 
-        const linkToPage = this.app.fileManager.generateMarkdownLink(file, sourcePath, `#page=${page}`).slice(1);
+        const linkToPage = this.lib.generateMarkdownLink(file, sourcePath, `#page=${page}`).slice(1);
         // https://github.com/obsidianmd/obsidian-api/issues/154
         // const linkToPageWithDisplay = app.fileManager.generateMarkdownLink(file, sourcePath, `#page=${page}`, display).slice(1);
         const linkToPageWithDisplay = this.lib.generateMarkdownLink(file, sourcePath, `#page=${page}`, display || undefined).slice(1);
