@@ -3,12 +3,18 @@ import { MarkdownRenderChild, RGB } from 'obsidian';
 import PDFPlus from 'main';
 import { ColorPalette } from 'color-palette';
 import { DEFAULT_BACKLINK_HOVER_COLOR } from 'settings';
-import { hexToRgb, isHexString, rgbStringToObject } from 'utils';
+import { getObsidianDefaultHighlightColorRGB, hexToRgb, isHexString, rgbStringToObject } from 'utils';
 import { PDFPlusComponent } from 'lib/component';
 
 
 export class DomManager extends PDFPlusComponent {
 	styleEl: HTMLStyleElement;
+	/**
+	 * "R, G, B" of the color that Obsidian uses for ==highlights== in the current theme.
+	 * This is what PDF++ falls back to when no color is specified.
+	 * Obsidian itself provided this as `--text-highlight-bg-rgb` until it was removed in 1.14.
+	 */
+	obsidianHighlightRgb = '';
 
 	constructor(plugin: PDFPlus) {
 		super(plugin);
@@ -38,6 +44,18 @@ export class DomManager extends PDFPlusComponent {
 		this.updateClass('pdf-plus-backlink-selection-underline', this.settings.selectionBacklinkVisualizeStyle === 'underline');
 
 		this.app.workspace.trigger('css-change');
+
+		// Obsidian's highlight color depends on the theme and the color scheme (light or dark)
+		this.registerEvent(this.app.workspace.on('css-change', () => {
+			if (this.computeObsidianHighlightRgb() !== this.obsidianHighlightRgb) {
+				this.updateStyleEl();
+			}
+		}));
+	}
+
+	private computeObsidianHighlightRgb() {
+		const { r, g, b } = getObsidianDefaultHighlightColorRGB();
+		return `${r}, ${g}, ${b}`;
 	}
 
 	updateClass(className: string, condition: boolean) {
@@ -47,6 +65,8 @@ export class DomManager extends PDFPlusComponent {
 
 	updateStyleEl() {
 		const settings = this.plugin.settings;
+
+		this.obsidianHighlightRgb = this.computeObsidianHighlightRgb();
 
 		this.styleEl.textContent = Object.entries(settings.colors).map(([name, color]) => {
 			return isHexString(color) ? [
@@ -61,7 +81,7 @@ export class DomManager extends PDFPlusComponent {
 
 		let defaultColor = settings.colors[settings.defaultColor];
 		if (!defaultColor || !isHexString(defaultColor)) {
-			defaultColor = 'rgb(var(--text-highlight-bg-rgb))';
+			defaultColor = 'rgb(var(--pdf-plus-obsidian-highlight-rgb))';
 		}
 		this.styleEl.textContent += [
 			`\n.pdf-plus-backlink-highlight-layer .pdf-plus-backlink:not(.hovered-highlight) {`,
@@ -159,6 +179,12 @@ export class DomManager extends PDFPlusComponent {
 	setCSSColorVariables() {
 		const settings = this.plugin.settings;
 
+		this.styleEl.textContent += [
+			`\nbody {`,
+			`    --pdf-plus-obsidian-highlight-rgb: ${this.obsidianHighlightRgb}`,
+			`}`
+		].join('\n');
+
 		for (const [colorName, hexColor] of Object.entries(settings.colors)) {
 			const varName = this.toCSSVariableName(colorName);
 			const rgbColor = hexToRgb(hexColor);
@@ -189,14 +215,14 @@ export class DomManager extends PDFPlusComponent {
 		if (!defaultColorSet) {
 			this.styleEl.textContent += [
 				`\nbody {`,
-				`    --pdf-plus-default-color-rgb: var(--text-highlight-bg-rgb)`,
+				`    --pdf-plus-default-color-rgb: var(--pdf-plus-obsidian-highlight-rgb)`,
 				`}`
 			].join('\n');
 		}
 
 		// let defaultColor = settings.colors[settings.defaultColor];
 		// if (!defaultColor || !isHexString(defaultColor)) {
-		// 	defaultColor = 'rgb(var(--text-highlight-bg-rgb))';
+		// 	defaultColor = 'rgb(var(--pdf-plus-obsidian-highlight-rgb))';
 		// }
 		// this.styleEl.textContent += [
 		// 	`\n.pdf-plus-backlink-highlight-layer .pdf-plus-backlink:not(.hovered-highlight) {`,

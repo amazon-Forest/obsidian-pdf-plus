@@ -398,7 +398,7 @@ settings:
 }
 
 .pdf-plus-backlink-highlight-layer .rect-highlight {
-    background-color: rgb(var(--text-highlight-bg-rgb));
+    background-color: rgb(var(--pdf-plus-obsidian-highlight-rgb, 255, 208, 0));
     border-radius: var(--radius-m);
     opacity: 0.2;
 }
@@ -606,12 +606,12 @@ body {
 
 /* From Obsidian's app.css (.annotationLayer .mod-focused /  .annotationLayer .boundingRect)*/
 .pdf-plus-annotation-bounding-rect {
-    background-color: rgba(var(--text-highlight-bg-rgb), 0.1);
+    background-color: rgba(var(--pdf-plus-obsidian-highlight-rgb, 255, 208, 0), 0.1);
     border-radius: var(--radius-s);
     box-shadow: var(--shadow-s);
     box-sizing: content-box;
     margin: calc(var(--size-4-2) * -1);
-    border: var(--size-4-1) solid rgba(var(--text-highlight-bg-rgb), 0.8);
+    border: var(--size-4-1) solid rgba(var(--pdf-plus-obsidian-highlight-rgb, 255, 208, 0), 0.8);
     padding: var(--size-4-1);
     z-index: 0;
     /* Avoid preventing annotation click */
