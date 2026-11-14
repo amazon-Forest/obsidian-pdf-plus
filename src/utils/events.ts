@@ -227,6 +227,11 @@ export function selectDoubleClickedWord(evt: MouseEvent) {
     const selection = doc.getSelection();
     if (!selection) return;
 
+    // If the browser has already selected something, leave it as is. In particular, a double-click followed by
+    // a drag creates a selection extended word by word, and rebuilding the selection from the release point
+    // would collapse it into the last word (https://github.com/RyotaUshio/obsidian-pdf-plus/issues/505).
+    if (!selection.isCollapsed) return;
+
     let range = null;
 
     if (doc.caretRangeFromPoint) {
