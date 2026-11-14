@@ -14,6 +14,7 @@ import { InstallerVersionModal } from 'modals';
 import { PDFExternalLinkPostProcessor, PDFInternalLinkPostProcessor, PDFOutlineItemPostProcessor, PDFThumbnailItemPostProcessor } from 'post-process';
 import { BibliographyManager } from 'bib';
 import { DataviewInlineFieldsModal, withFilesWithInlineFields } from 'lib/dataview';
+import { LOCAL_BUILD_BASE_VERSION } from 'local-build';
 
 
 export default class PDFPlus extends Plugin {
@@ -769,20 +770,21 @@ export default class PDFPlus extends Plugin {
 	async checkForUpdatesIfNeeded() {
 		if (!this.settings.autoCheckForUpdates) return;
 
+		// LOCAL BUILD: compare the releases of the original PDF++ with the version this build is based on,
+		// not with the (date-based) version of this build, and do not offer to install them:
+		// that would replace this build with the original one.
 		const result = await this.lib.checkForUpdates({
 			minHoursSinceRelease: 24,
+			currentVersion: LOCAL_BUILD_BASE_VERSION,
 		});
 		if (result.shouldUpdate) {
 			this.app.workspace.onLayoutReady(() => {
-				new Notice(createFragment((el) => {
-					el.append(
-						'PDF++: There is a newer version available! ',
-						createEl('a', {
-							text: 'Update now',
-							href: 'obsidian://show-plugin?id=pdf-plus',
-						})
-					);
-				}));
+				new Notice(
+					`PDF++ (local build): The original PDF++ has published a release newer than ${LOCAL_BUILD_BASE_VERSION}, which this build is based on. `
+					+ 'This local build is not updated automatically. '
+					+ 'You can turn this notice off in the PDF++ settings (Misc > Automatically check for updates).',
+					15000
+				);
 			});
 		}
 	}

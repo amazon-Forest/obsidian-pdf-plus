@@ -1,6 +1,7 @@
 import { Component, DropdownComponent, Events, HexString, IconName, MarkdownRenderer, Modifier, Notice, ObsidianProtocolData, Platform, PluginSettingTab, Setting, TextAreaComponent, TextComponent, debounce, setIcon, setTooltip } from 'obsidian';
 
 import PDFPlus from 'main';
+import { LOCAL_BUILD_BASE_VERSION } from 'local-build';
 import { ExtendedPaneType } from 'lib/workspace-lib';
 import { AutoFocusTarget } from 'lib/copy-link';
 import { CommandSuggest, FuzzyFileSuggest, FuzzyFolderSuggest, FuzzyMarkdownFileSuggest, KeysOfType, getModifierDictInPlatform, getModifierNameInPlatform, isHexString } from 'utils';
@@ -3372,7 +3373,7 @@ export class PDFPlusSettingTab extends PluginSettingTab {
 		this.addHeading('Misc', 'misc', 'lucide-more-horizontal');
 		this.addToggleSetting('autoCheckForUpdates', () => this.plugin.checkForUpdatesIfNeeded())
 			.setName('Automatically check for updates')
-			.setDesc('If enabled, PDF++ will automatically check for updates every 24 hours and notify you if a new version is available.');
+			.setDesc(`This is a local build (version ${this.plugin.manifest.version}, based on PDF++ ${LOCAL_BUILD_BASE_VERSION}). It is never updated automatically. If enabled, it will check every 24 hours whether the original PDF++ has published a newer release and notify you.`);
 		this.addToggleSetting('fixObsidianTextSelectionBug')
 			.setName(`Fix Obsidian 1.9's text selection bug`)
 			.then((setting) => {
