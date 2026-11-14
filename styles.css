@@ -329,6 +329,11 @@ settings:
     padding-inline: max(var(--size-4-12), var(--setting-group-center-offset, 0px));
 }
 
+/* On phones, use the same narrow side padding as the built-in setting tabs. */
+.is-phone .modal.mod-settings .pdf-plus-settings.vertical-tab-content:not(.setting-page) .content {
+    padding-inline: max(var(--size-4-4), var(--safe-area-inset-left, 0px)) max(var(--size-4-4), var(--safe-area-inset-right, 0px));
+}
+
 /* The rows of name-template pairs (display text formats & copy formats) are wider than the settings window of
    Obsidian 1.13+ at its default size. Let their inputs shrink instead of making the whole tab scroll horizontally. */
 .pdf-plus-settings.vertical-tab-content .setting-item.no-border .setting-item-control {

@@ -761,9 +761,13 @@ export class PDFPlusSettingTab extends PluginSettingTab {
 		if (!el) return;
 
 		const scroll = () => {
-			if (el.isConnected) {
-				this.containerEl.scrollTo({ top: el.offsetTop - this.headerContainerEl.offsetHeight, ...options });
-			}
+			if (!el.isConnected) return;
+			// Bring the setting right below the sticky header. Where the header sticks depends on the layout
+			// (e.g. on phones, Obsidian 1.13+ pads the top of the tab to make room for the modal's own header),
+			// so measure the actual positions instead of relying on `offsetTop`.
+			const headerBottom = this.headerContainerEl.getBoundingClientRect().bottom;
+			const delta = el.getBoundingClientRect().top - headerBottom;
+			this.containerEl.scrollTo({ top: this.containerEl.scrollTop + delta, ...options });
 		};
 		scroll();
 
