@@ -619,6 +619,8 @@ export class PDFPlusSettingTab extends PluginSettingTab {
 
 	events = new Events();
 
+	private stopKeepingScrollPosition: (() => void) | null = null;
+
 	constructor(public plugin: PDFPlus) {
 		super(plugin.app, plugin);
 		this.component = new Component();
@@ -756,7 +758,49 @@ export class PDFPlusSettingTab extends PluginSettingTab {
 
 	scrollToSetting(setting: Setting, options?: { behavior: ScrollBehavior }) {
 		const el = setting.settingEl;
-		if (el) this.containerEl.scrollTo({ top: el.offsetTop - this.headerContainerEl.offsetHeight, ...options });
+		if (!el) return;
+
+		const scroll = () => {
+			if (el.isConnected) {
+				this.containerEl.scrollTo({ top: el.offsetTop - this.headerContainerEl.offsetHeight, ...options });
+			}
+		};
+		scroll();
+
+		// When the setting tab has just been opened (e.g. via "Customize..." in the color palette),
+		// the scroll above can be a no-op or end up at a wrong position, because:
+		// - Since Obsidian 1.13, the settings are opened in a separate window by default, and the styles are
+		//   not applied to its content yet at this point, so the tab is not scrollable yet.
+		// - The descriptions written in markdown are rendered asynchronously, so the offsets are not final yet.
+		// Therefore, keep the target in place while the layout settles.
+		if (options?.behavior !== 'smooth') {
+			this.keepScrollPositionWhileLayoutSettles(scroll);
+		}
+	}
+
+	/**
+	 * Re-run `scroll` whenever the size of the setting tab or its content changes for a short period of time,
+	 * or until the user starts interacting with the setting tab, whichever comes first.
+	 */
+	private keepScrollPositionWhileLayoutSettles(scroll: () => void, durationMs = 1500) {
+		this.stopKeepingScrollPosition?.();
+
+		const win = this.containerEl.win as Window & typeof globalThis;
+		const observer = new win.ResizeObserver(() => scroll());
+		observer.observe(this.containerEl);
+		observer.observe(this.contentEl);
+
+		const userEventTypes = ['wheel', 'touchstart', 'pointerdown', 'keydown'] as const;
+		const stop = () => {
+			observer.disconnect();
+			win.clearTimeout(timer);
+			userEventTypes.forEach((type) => this.containerEl.removeEventListener(type, stop));
+			if (this.stopKeepingScrollPosition === stop) this.stopKeepingScrollPosition = null;
+		};
+		userEventTypes.forEach((type) => this.containerEl.addEventListener(type, stop, { passive: true }));
+		const timer = win.setTimeout(stop, durationMs);
+
+		this.stopKeepingScrollPosition = stop;
 	}
 
 	openFromObsidianUrl(params: ObsidianProtocolData) {
@@ -1615,7 +1659,8 @@ export class PDFPlusSettingTab extends PluginSettingTab {
 				'> - [Visit the docs](https://ryotaushio.github.io/obsidian-pdf-plus/)',
 				'> - <a id="pdf-plus-funding-link-placeholder"></a>',
 			], el);
-			const linkEl = document.getElementById('pdf-plus-funding-link-placeholder');
+			// Do not use `document.getElementById` here: since Obsidian 1.13, the settings can live in a separate window.
+			const linkEl = el.querySelector<HTMLElement>('#pdf-plus-funding-link-placeholder');
 			if (linkEl) {
 				linkEl.textContent = 'Help me keep PDF++ alive!';
 				linkEl.onclick = (evt) => {
