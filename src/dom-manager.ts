@@ -1,4 +1,4 @@
-import { MarkdownRenderChild, RGB } from 'obsidian';
+import { MarkdownRenderChild, RGB, requireApiVersion } from 'obsidian';
 
 import PDFPlus from 'main';
 import { ColorPalette } from 'color-palette';
@@ -132,23 +132,27 @@ export class DomManager extends PDFPlusComponent {
 
 		const calloutType = this.plugin.settings.calloutType.toLowerCase();
 
-		for (const colorName of Object.keys(this.plugin.settings.colors)) {
-			const varName = this.toCSSVariableName(colorName) ?? '--pdf-plus-default-color-rgb';
-
+		// Since Obsidian 1.13, `--callout-color` has to be a valid CSS color. It used to be an "R, G, B" triple.
+		const calloutColorIsTriple = !requireApiVersion('1.13.0');
+		const addCalloutColorStyle = (selector: string, rgbVarName: string) => {
 			this.styleEl.textContent += [
-				`\n.callout[data-callout="${calloutType}"][data-callout-metadata="${colorName.toLowerCase()}"] {`,
-				`	--callout-color: var(${varName});`,
-				`   background-color: rgba(var(--callout-color), var(--pdf-plus-highlight-opacity, 0.2))`,
+				`\n${selector} {`,
+				calloutColorIsTriple
+					? `	--callout-color: var(${rgbVarName});`
+					: `	--callout-color: rgb(var(${rgbVarName}));`,
+				calloutColorIsTriple
+					? `   background-color: rgba(var(--callout-color), var(--pdf-plus-highlight-opacity, 0.2))`
+					: `   background-color: rgb(from var(--callout-color) r g b / var(--pdf-plus-highlight-opacity, 0.2))`,
 				`}`
 			].join('\n');
+		};
+
+		for (const colorName of Object.keys(this.plugin.settings.colors)) {
+			const varName = this.toCSSVariableName(colorName) ?? '--pdf-plus-default-color-rgb';
+			addCalloutColorStyle(`.callout[data-callout="${calloutType}"][data-callout-metadata="${colorName.toLowerCase()}"]`, varName);
 		}
 
-		this.styleEl.textContent += [
-			`\n.callout[data-callout="${calloutType}"] {`,
-			`	--callout-color: var(--pdf-plus-default-color-rgb);`,
-			`   background-color: rgba(var(--callout-color), var(--pdf-plus-highlight-opacity, 0.2))`,
-			`}`
-		].join('\n');
+		addCalloutColorStyle(`.callout[data-callout="${calloutType}"]`, '--pdf-plus-default-color-rgb');
 
 		const iconName = this.plugin.settings.calloutIcon;
 		if (iconName) {
@@ -261,7 +265,8 @@ class PDFPlusCalloutRenderer extends MarkdownRenderChild {
 			const isRgb = rgb.length === 3 && rgb.every((val) => 0 <= val && val <= 255);
 
 			if (isRgb) {
-				this.containerEl.style.setProperty('--callout-color', rgb.join(', '));
+				// Since Obsidian 1.13, `--callout-color` has to be a valid CSS color. It used to be an "R, G, B" triple.
+				this.containerEl.style.setProperty('--callout-color', requireApiVersion('1.13.0') ? `rgb(${rgb.join(', ')})` : rgb.join(', '));
 			}
 		}
 	}
