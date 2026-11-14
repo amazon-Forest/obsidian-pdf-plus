@@ -294,10 +294,13 @@ const patchPDFViewerChild = (plugin: PDFPlus, child: PDFViewerChild) => {
                 // Fix for the Obsidian core issue where the "find next" button in the find bar has a wrong icon
                 // https://forum.obsidian.md/t/duplicate-up-arrow-up-displayed-when-searching-a-pdf-inside-obsidian/84403/3
                 const fixedApiVersion = '1.7.0';
+                // `findBar` can be missing here, e.g. when the viewer has been unloaded while `load` was in progress.
+                // Without the guards, the resulting TypeError made this (async) `load` reject.
                 const findNextButtonEl = this.findBar?.findNextButtonEl;
-                const findNextIconEl = findNextButtonEl.firstElementChild;
+                const findNextIconEl = findNextButtonEl?.firstElementChild;
 
                 if (!requireApiVersion(fixedApiVersion)
+                    && findNextButtonEl
                     && findNextIconEl
                     && findNextIconEl.matches('svg.lucide-arrow-up')) {
                     setIcon(findNextButtonEl, 'lucide-arrow-down');
